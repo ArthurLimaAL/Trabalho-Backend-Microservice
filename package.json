@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "name": "trabalho-backend-microservice",
+  "description": "<p>\r - Arthur Lima <br>\r - Evelyn Karina <br>\r - Gabriel Martins <br>\r - Arthur Viníncius <br>\r - Maria Eduarda\r <p>",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module"
+}
