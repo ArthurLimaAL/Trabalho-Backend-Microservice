@@ -3,9 +3,13 @@
 # Tecnologias Usadas
 
 <ul>
-  <li>Node.js</li>
+  <li>Node.js + Express + JWT</li>
   <li>Git</li>
   <li>GitHub</li>
+  <li>Docker + Kubernetes
+  <li>MongoDB
+  <li>MySQL
+  <li>React + Vite
 </ul>
 
 # Membros do projeto
