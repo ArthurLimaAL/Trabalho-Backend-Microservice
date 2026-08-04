@@ -1,0 +1,121 @@
+# ============================================================
+# DOCKER COMPOSE - Pagamento Service
+# ============================================================
+# Subir localmente com: docker compose up --build
+# 
+# 🔐 SEGURANÇA NO DOCKER:
+# - Variáveis sensíveis via .env (não hardcoded aqui)
+# - Healthcheck para garantir que o serviço está pronto
+# - Network isolation: serviços se comunicam via nome, não IPs
+# ============================================================
+
+services:
+  # ==========================================
+  # BANCO DE DADOS POSTGRESQL
+  # ==========================================
+  # Database-per-Service: banco exclusivo deste microsserviço
+  # 
+  # 🔐 SEGURANÇA:
+  # - POSTGRES_PASSWORD em .env (não hardcoded)
+  # - Porta mapeada apenas para desenvolvimento (remova em prod)
+  # - Healthcheck garante que o app só sobe quando o DB está pronto
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: payment
+      # ⚠️ Em produção, use: POSTGRES_PASSWORD=${ POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payment_dev_password}
+      POSTGRES_DB: payment_service
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment -d payment_service"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    # Isolamento de rede - apenas o payment-service conecta
+    networks:
+      - payment-network
+
+  # ==========================================
+  # SERVIÇO DE PAGAMENTO
+  # ==========================================
+  payment:
+    build: .
+    environment:
+      # Porta do serviço
+      PORT: 3001
+      
+      # Conexão com o banco
+      # 🔐 IMPORTANTE: use o NOME DO SERVIÇO "db", não "localhost"!
+      # Dentro da rede Docker, localhost aponta para o próprio container
+      DATABASE_URL: postgres://payment:${POSTGRES_PASSWORD:-payment_dev_password}@db:5432/payment_service
+      
+      # 🔐 SEGURANÇA CRÍTICA - Chaves sensíveis em .env
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me}
+      GATEWAY_WEBHOOK_SECRET: ${GATEWAY_WEBHOOK_SECRET:-}
+      
+      # Configurações de negócio
+      COMMISSION_RATE: "0.12"
+      SERVICE_FEE_CENTS: "150"
+      PAYMENT_TIMEOUT_MS: "300000"
+      
+      # 🔐 Segurança adicional
+      NODE_ENV: production
+      
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    
+    # ==========================================
+    # STARTUP SEGURO
+    # ==========================================
+    # Executa migrações antes de subir
+    # Se migrações falharem, o container não sobe
+    command: sh -c "npm run migrate && npm start"
+    
+    # Reinício automático em falhas
+    restart: unless-stopped
+    
+    networks:
+      - payment-network
+
+  # ==========================================
+  # OPCIONAL: NGINX como proxy inverso
+  # ==========================================
+  # Em produção real, coloque um NGINX frente ao app
+  # - TLS termination
+  # - Rate limiting
+  # - Compression
+  # 
+  # exemplo:
+  # nginx:
+  #   image: nginx:alpine
+  #   ports: ["443:443"]
+  #   volumes: 
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #     - ./ssl:/etc/nginx/ssl
+  #   depends_on: [payment]
+  #   networks: [payment-network]
+
+volumes:
+  pgdata:
+
+networks:
+  payment-network:
+    driver: bridge
+
+# ============================================================
+# PRODUIÇÃO - Docker Compose
+# ============================================================
+# Em produção, considere:
+# - Usar Docker Swarm ou Kubernetes
+# - Segrecs do Docker: docker secret create jwt_secret ./secrets/jwt.txt
+# - Redes mais restritas
+# - Sem portas mapeadas (apenas internal)
+# - Logs centralizados (ELK, Loki)
+# ============================================================
