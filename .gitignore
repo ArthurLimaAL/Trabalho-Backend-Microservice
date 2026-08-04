@@ -1,1 +1,22 @@
+# === Dependências (não versionar) ===
 node_modules/
+
+# === Segredos / config local (NUNCA subir) ===
+.env
+.env.*
+!.env.example
+
+# === Cobertura de testes (gerado) ===
+coverage/
+*.lcov
+.nyc_output/
+
+# === Lixo de SO / editores ===
+._*
+.DS_Store
+Thumbs.db
+*.log
+
+# === Build / dist ===
+dist/
+build/
