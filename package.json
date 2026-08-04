@@ -1,6 +1,12 @@
 {
   "dependencies": {
-    "express": "^5.2.1"
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0"
   },
   "name": "trabalho-backend-microservice",
   "description": "<p>\r - Arthur Lima <br>\r - Evelyn Karina <br>\r - Gabriel Martins <br>\r - Arthur Viníncius <br>\r - Maria Eduarda\r <p>",
@@ -12,5 +18,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
 }
