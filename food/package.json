@@ -1,0 +1,31 @@
+{
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
+  },
+  "name": "trabalho-backend-microservice",
+  "description": "<p>\r - Arthur Lima <br>\r - Evelyn Karina <br>\r - Gabriel Martins <br>\r - Arthur Viníncius <br>\r - Maria Eduarda\r <p>",
+  "version": "1.0.0",
+  "main": "food/index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice/issues"
+  },
+  "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme"
+}
