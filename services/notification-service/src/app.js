@@ -1,17 +1,19 @@
-import express from "express"; // Importa o Express que é a ferramenta que cria servidores web, a base.
-import cors from "cors"; // Importa o Cors que é a ferramenta que deixa os outros sistemas acessarem.
+import express from "express";
+import cors from "cors";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
-const app = express (); // const cria a aplicação
+const app = express();
 
-app.use (cors ()); // responsável por ativar o cors, sem ele, os outros sistemas não respondem.
-app.use (express.json ()); // Responsável por ativar a leitura do json.
+app.use(cors());
+app.use(express.json());
+app.use("/notifications", notificationRoutes);
 
-// É uma rota de testes, no caso, se vc acessar o site http://localhost:3004, ele responderá com um OK.
-app.get ("/", (req, res) => {
-    res.json ({ status: "ok", servico: "notification-service" });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", servico: "notification-service", timestamp: new Date().toISOString() });
 });
 
-export default app; // Ele é responsável por entregar o app para os outros arquivos e o server.js importa ele.
+app.get("/", (req, res) => {
+  res.json({ status: "ok", servico: "notification-service" });
+});
 
-
-// o app.js disponibiliza o app para o server.js usar.
+export default app;

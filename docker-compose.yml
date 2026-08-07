@@ -102,6 +102,22 @@ services:
   #   depends_on: [payment]
   #   networks: [payment-network]
 
+# ==========================================
+  # NOTIFICATION SERVICE
+  # ==========================================
+  # Não possui banco próprio (usa memória/JSON, conforme enunciado).
+  # Database-per-Service NÃO se aplica pois não há persistência.
+  notification:
+    build: ./services/notification-service
+    environment:
+      PORT: 3004
+      NODE_ENV: production
+    ports:
+      - "3004:3004"
+    restart: unless-stopped
+    networks:
+      - payment-network
+
 volumes:
   pgdata:
 

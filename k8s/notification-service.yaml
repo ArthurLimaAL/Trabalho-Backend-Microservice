@@ -1,0 +1,145 @@
+# ============================================================
+# KUBERNETES — Notification Service
+# ============================================================
+# Aplicar com: kubectl apply -f k8s/notification-service.yaml
+#
+# Este serviço NÃO possui banco de dados (usa memória/JSON, conforme
+# o enunciado permite). Por isso, não há PVC nem Deployment de banco.
+#
+# 🔐 SEGURANÇA:
+# - ConfigMap: variáveis NÃO sensíveis
+# - Nenhum segredo hardcoded (o serviço não precisa de senhas)
+# - Probes de vida/prontidão via /health
+# - Container roda como não-root
+# ============================================================
+
+# ==========================================
+# CONFIGMAP - Variáveis de Configuração
+# ==========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-service-config
+  labels:
+    app: notification-service
+data:
+  # Porta HTTP do serviço
+  PORT: "3004"
+  NODE_ENV: "production"
+
+---
+# ==========================================
+# DEPLOYMENT - Notification Service
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  labels:
+    app: notification-service
+spec:
+  replicas: 2  # Alta disponibilidade (múltiplos consumidores)
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: api
+          image: notification-service:latest
+          ports:
+            - containerPort: 3004
+
+          # Injeção de configuração (não há segredos neste serviço)
+          envFrom:
+            - configMapRef:
+                name: notification-service-config
+
+          # Probes de vida e prontidão
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+
+          # Segurança do container (não-root, sem privilégios)
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          # Limites de recursos
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1000
+
+---
+# ==========================================
+# SERVICE - Notification API
+# ==========================================
+# Expor via Ingress / outros serviços do cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  labels:
+    app: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 80
+      targetPort: 3004
+  type: ClusterIP
+
+---
+# ==========================================
+# NETWORK POLICY - Controle de Acesso
+# ==========================================
+# Permite que apenas o Ingress chegue ao serviço
+# (e o serviço acesse o barramento de eventos, se houver)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: notification-service-network-policy
+  labels:
+    app: notification-service
+spec:
+  podSelector:
+    matchLabels:
+      app: notification-service
+  policyTypes:
+    - Ingress
+  ingress:
+    # Permite tráfego do Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
