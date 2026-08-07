@@ -7,6 +7,12 @@
     "jsonwebtoken": "^9.0.3",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0"
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0"
   },
   "name": "trabalho-backend-microservice",
   "description": "<p>\r - Arthur Lima <br>\r - Evelyn Karina <br>\r - Gabriel Martins <br>\r - Arthur Viníncius <br>\r - Maria Eduarda\r <p>",
@@ -28,6 +34,9 @@
     "url": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice/issues"
   },
   "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  "type": "module",
   "devDependencies": {
     "nodemon": "^3.1.14"
   }

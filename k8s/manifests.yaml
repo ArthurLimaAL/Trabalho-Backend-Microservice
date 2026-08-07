@@ -1,0 +1,390 @@
+# ============================================================
+# KUBERNETES — Payment Service
+# ============================================================
+# Aplicar com: kubectl apply -f k8s/
+# 
+# 🔐 SEGURANÇA NO KUBERNETES:
+# - ConfigMap: variáveis NÃO sensíveis
+# - Secret: segredos (JWT_SECRET, passwords) - NUNCA no ConfigMap!
+# - PVC: persistência do banco (senão apaga tudo a cada reinício)
+# - NetworkPolicy: controle de acesso entre serviços
+# ============================================================
+
+# ==========================================
+# CONFIGMAP - Variáveis de Configuração
+# ==========================================
+# Use ConfigMap para valores que não são segredos
+# Em produção, limite as variáveis aquí
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-service-config
+  labels:
+    app: payment-service
+data:
+  # Porta HTTP do serviço
+  PORT: "3001"
+  
+  # Conexão com o banco de dados
+  # 🔐 Formato: postgres://user:pass@host:port/db
+  # O hostname 'payment-db' é o Service name do PostgreSQL
+  DATABASE_URL: postgres://payment:${POSTGRES_PASSWORD}@payment-db:5432/payment_service
+  
+  # Regras de negócio
+  COMMISSION_RATE: "0.12"
+  SERVICE_FEE_CENTS: "150"
+  PAYMENT_TIMEOUT_MS: "300000"
+  OUTBOX_RELAY_INTERVAL_MS: "1000"
+  EXPIRE_SWEEP_INTERVAL_MS: "5000"
+  
+  # Segurança
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  
+  # CORS - origins permitidas (separadas por vírgula)
+  # Em produção, use apenas seus domínios reais
+  ALLOWED_ORIGINS: "https://app.seudominio.com,https://admin.seudominio.com"
+
+---
+# ==========================================
+# SECRET - Segredos (NUNCA no ConfigMap!)
+# ==========================================
+# 
+# 🔐 COMO CRIAR:
+# kubectl create secret generic payment-service-secrets \
+#   --from-literal=JWT_SECRET=$(openssl rand -base64 32) \
+#   --from-literal=DB_PASSWORD=$(openssl rand -base64 24) \
+#   --from-literal=GATEWAY_WEBHOOK_SECRET=$(openssl rand -base64 32)
+# 
+# OU crie um arquivo YAML separado e aplique:
+# 
+# kubectl apply -f secrets.yaml
+# 
+# Para rotacionar segredos:
+# kubectl create secret generic payment-service-secrets \
+#   --from-literal=JWT_SECRET=<NOVA_CHAVE> \
+#   --from-literal=DB_PASSWORD=<NOVA_PASSWORD> \
+#   --from-literal=GATEWAY_WEBHOOK_SECRET=<NOVA_KEY> \
+#   --dry-run=client -o yaml | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-service-secrets
+  labels:
+    app: payment-service
+type: Opaque
+stringData:
+  # ⚠️ SUBSTITUA PELAS CHAVES REAIS
+  # Gere com: openssl rand -base64 32
+  JWT_SECRET: "GERE_AQUI_UMA_CHAVE_ALEATORIA_SEGURA_MIN_32_CARACT"
+  DB_PASSWORD: "GERE_AQUI_UMA_PASSWORD_ALEATORIA_SEGURA"
+  GATEWAY_WEBHOOK_SECRET: "GERE_AQUI_USANDO_OPENSSL_RAND_BASE64_32"
+
+---
+# ==========================================
+# PERSISTENT VOLUME CLAIM - Banco de Dados
+# ==========================================
+# Sem PVC, o Postgres perde todos os dados a cada reinício
+# Ajuste o storage conforme sua necessidade
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: payment-db-pvc
+  labels:
+    app: payment-db
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi  # Aumente conforme crescimento
+  storageClassName: standard  # Ou sua classe de storage padrão
+
+---
+# ==========================================
+# POSTGRESQL DATABASE
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-db
+  labels:
+    app: payment-db
+spec:
+  replicas: 1  # Para produção, considere replicas com Patroni/PGPool
+  selector:
+    matchLabels:
+      app: payment-db
+  template:
+    metadata:
+      labels:
+        app: payment-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            # Usuário do banco (não altere - código espera este nome)
+            - name: POSTGRES_USER
+              value: payment
+            
+            # Password vindo do Secret (mais seguro que hardcoded)
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-secrets
+                  key: DB_PASSWORD
+            
+            # Nome do banco
+            - name: POSTGRES_DB
+              value: payment_service
+            
+            # 🔐 Otimizações de segurança do Postgres
+            - name: POSTGRES_INITDB_ARGS
+              value: "--auth-host=scram-sha-256"
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          
+          # Probes de prontidão e vida
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "payment", "-d", "payment_service"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "payment", "-d", "payment_service"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          
+          # Segurança adicional
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 700  # UID do postgres no alpine
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: payment-db-pvc
+
+---
+# ==========================================
+# SERVICE - Banco de Dados
+# ==========================================
+# Internal service - acessível apenas dentro do cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+  labels:
+    app: payment-db
+spec:
+  selector:
+    app: payment-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP  # NUNCA NodePort ou LoadBalancer para o DB
+
+---
+# ==========================================
+# POSTGRESQL SERVICE (ClusterIP interno)
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: payment-db
+
+---
+# ==========================================
+# PAYMENT SERVICE - Deploy
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+spec:
+  replicas: 2  # Para alta disponibilidade
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      # === INIT CONTAINER - Migrações ===
+      # Executa migrações antes do container principal subir
+      # Se falhar, o pod não inicia - evita dados inconsistentes
+      initContainers:
+        - name: migrate
+          image: payment-service:latest
+          command: ["sh", "-c", "npm run migrate"]
+          envFrom:
+            - configMapRef:
+                name: payment-service-config
+            - secretRef:
+                name: payment-service-secrets
+          securityContext:
+            runAsNonRoot: true
+      
+      containers:
+        - name: api
+          image: payment-service:latest
+          ports:
+            - containerPort: 3001
+          
+          # Injeção de dependências
+          envFrom:
+            - configMapRef:
+                name: payment-service-config
+            - secretRef:
+                name: payment-service-secrets
+          
+          # Probes
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          
+          # Segurança do container
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          
+          # Limites de recursos
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      
+      # === SECURITY CONTEXT ===
+      # Bloqueia escalonamento de privilégios
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 1000
+
+---
+# ==========================================
+# SERVICE - Payment API
+# ==========================================
+# Expor via Ingress (não diretamente via LoadBalancer)
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 80
+      targetPort: 3001
+  type: ClusterIP
+
+---
+# ==========================================
+# NETWORK POLICY - Controle de Acesso
+# ==========================================
+# Bloqueia tráfego não autorizado entre namespaces
+# Aplique com: kubectl apply -f k8s/
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: payment-service-network-policy
+  labels:
+    app: payment-service
+spec:
+  podSelector:
+    matchLabels:
+      app: payment-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Permite tráfego do Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+    # Permite tráfego do Auth Service (para validar JWT)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 80
+  egress:
+    # Permite tráfego ao banco
+    - to:
+        - podSelector:
+            matchLabels:
+              app: payment-db
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ==========================================
+# INGRESS (opcional - com TLS)
+# ==========================================
+# Configurar quando tiver certificados
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: payment-service-ingress
+#   annotations:
+#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+#     nginx.ingress.kubernetes.io/rate-limit: "100"
+# spec:
+#   tls:
+#     - hosts:
+#         - api.payment.yourdomain.com
+#       secretName: payment-service-tls
+#   rules:
+#     - host: api.payment.yourdomain.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: payment-service
+#                 port:
+#                   number: 80
