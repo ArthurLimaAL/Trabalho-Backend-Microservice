@@ -1,1 +1,1 @@
-require("../strategies/google.strategy");
+import "../strategies/google.strategy.js";

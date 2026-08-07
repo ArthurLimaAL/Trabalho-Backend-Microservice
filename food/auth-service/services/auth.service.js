@@ -1,6 +1,6 @@
-const { generateToken } = require("../utils/jwt");
+import { generateToken } from "../utils/jwt.js";
 
-exports.loginWithGoogle = (user) => {
+export const loginWithGoogle = (user) => {
     // Aqui voce salvaria no banco (ex: MongoDB)
 
     const token = generateToken(user);

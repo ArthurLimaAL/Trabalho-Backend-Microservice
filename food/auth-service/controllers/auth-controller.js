@@ -1,7 +1,7 @@
-const authService = require("../services/auth.service");
+import { loginWithGoogle } from "../services/auth.service.js";
 
-exports.googleCallback = (req, res) => {
-    const result = authService.loginWithGoogle(req.user);
+export const googleCallback = (req, res) => {
+    const result = loginWithGoogle(req.user);
 
     res.json(result);
 };
