@@ -1,17 +1,13 @@
 {
-  "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-session": "^1.19.0",
-    "jsonwebtoken": "^9.0.3",
-    "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+"dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.1",
+    "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pg": "^8.22.0"
   },
   "name": "trabalho-backend-microservice",
@@ -34,10 +30,7 @@
     "url": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice/issues"
   },
   "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme",
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  "type": "module",
-  "devDependencies": {
+"devDependencies": {
     "nodemon": "^3.1.14"
   }
 }
