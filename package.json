@@ -1,7 +1,12 @@
 {
   "dependencies": {
-    "bcrypt": "^6.0.0",
-<<<<<<< HEAD
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -12,38 +17,27 @@
   "name": "trabalho-backend-microservice",
   "description": "<p>\r - Arthur Lima <br>\r - Evelyn Karina <br>\r - Gabriel Martins <br>\r - Arthur Viníncius <br>\r - Maria Eduarda\r <p>",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "food/index.js",
   "scripts": {
-=======
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "install": "^0.13.0",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.22.0",
-    "uuid": "^14.0.1"
-  },
-  "name": "jwt_teste",
-  "version": "1.0.0",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "node --env-file=.env src/index.js",
-    "dev": "node --env-file=.env --watch src/index.js",
->>>>>>> ArthurL
+    "start": "node food/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-<<<<<<< HEAD
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice/issues"
+  },
+  "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   "type": "module",
   "devDependencies": {
     "nodemon": "^3.1.14"
-=======
-  "description": "",
-  "type": "module",
-  "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^26.1.2"
->>>>>>> ArthurL
   }
 }
