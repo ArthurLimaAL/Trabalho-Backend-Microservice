@@ -26,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice/issues"
   },
-  "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme"
+  "homepage": "https://github.com/ArthurLimaAL/Trabalho-Backend-Microservice#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
 }
