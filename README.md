@@ -19,5 +19,6 @@
 - Gabriel Martins <br>
 - Arthur Viníncius <br>
 - Ismael Victor <br>
-- Maria Eduarda
+- Maria Eduarda <br>
+- Karollayne Correia
 <p>
