@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: appuser
+      DB_PASS: apppass
+      DB_NAME: order_service_db
+      JWT_SECRET: chave-apenas-para-teste
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: order_service_db
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uappuser", "-papppass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:
