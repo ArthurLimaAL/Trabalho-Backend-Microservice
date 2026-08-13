@@ -1,0 +1,24 @@
+{
+  "name": "catalogo8",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.5.0",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "mongoose": "^9.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "jest": "^29.6.0",
+    "supertest": "^7.2.2",
+    "mongodb-memory-server": "^11.2.0"
+  }
+}
