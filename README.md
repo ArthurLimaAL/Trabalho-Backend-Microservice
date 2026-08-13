@@ -18,7 +18,7 @@
 - Evelyn Karina <br>
 - Gabriel Martins <br>
 - Arthur Viníncius <br>
-- Ismael Victor <br>
+- Esmael Victor <br>
 - Maria Eduarda <br>
 - Karollayne Correia
 <p>
