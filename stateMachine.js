@@ -1,8 +1,8 @@
 const transicoes = {
-    'CRIADO': ['PAGO', 'CANCELADO'],
-    'PAGO': ['EM_PREPARO', 'CANCELADO'],
-    'EM_PREPARO': ['SAIU_PARA_ENTREGA'],
-    'SAIU_PARA_ENTREGA': ['CONCLUIDO']
+    CRIADO: ['PAGO'],
+    PAGO: ['EM_PREPARO'],
+    EM_PREPARO: ['SAIU_PARA_ENTREGA'],
+    SAIU_PARA_ENTREGA: ['CONCLUIDO']
 };
 
 function validarTransicao(statusAtual, novoStatus) {
@@ -12,4 +12,23 @@ function validarTransicao(statusAtual, novoStatus) {
     return true;
 }
 
-module.exports = {validarTransicao};
+function validarCancelamento(statusAtual, ehSuporte, disputaId) {
+    const estadosCancelaveisPeloCliente = ['CRIADO', 'PAGO'];
+    const estadosAvancados = ['EM_PREPARO', 'SAIU_PARA_ENTREGA', 'CONCLUIDO'];
+
+    if (estadosCancelaveisPeloCliente.includes(statusAtual)) {
+        return true;
+    }
+
+    if (estadosAvancados.includes(statusAtual) && ehSuporte && disputaId) {
+        return true;
+    }
+
+    if (estadosAvancados.includes(statusAtual)) {
+        throw new Error('Cancelamento de pedido avançado exige intervenção do suporte e uma disputa');
+    }
+
+    throw new Error(`Não é possível cancelar um pedido no status ${statusAtual}`);
+}
+
+module.exports = { validarTransicao, validarCancelamento };

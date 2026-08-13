@@ -48,7 +48,7 @@ CREATE TABLE `historico_pedidos` (
 
 LOCK TABLES `historico_pedidos` WRITE;
 /*!40000 ALTER TABLE `historico_pedidos` DISABLE KEYS */;
-INSERT INTO `historico_pedidos` VALUES (1,1,'CRIADO','PAGO','2026-08-02 15:35:36'),(2,1,'PAGO','PREPARANDO','2026-08-02 15:36:32');
+INSERT INTO `historico_pedidos` VALUES (1,1,'CRIADO','PAGO','2026-08-02 15:35:36'),(2,1,'PAGO','EM_PREPARO','2026-08-02 15:36:32');
 /*!40000 ALTER TABLE `historico_pedidos` ENABLE KEYS */;
 UNLOCK TABLES;
 
