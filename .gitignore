@@ -1,8 +1,27 @@
+# Dependências locais
 node_modules/
+**/node_modules/
+frontend/node_modules/
+services/**/node_modules/
+
+# Segredos e ambiente local
 .env
 .env.*
-npm-debug.log
+**/.env
+**/.env.*
+!.env.example
+
+# Build e logs locais
+/dist/
+**/dist/
+.manus-logs/
+**/.manus-logs/
+*.log
+npm-debug.log*
+
+# Lockfiles gerados locais
 package-lock.json
-services/catalogo8/node_modules/
-services/catalogo8/.env
-services/catalogo8/.env.*
+pnpm-lock.yaml
+
+# Arquivos locais do editor
+.DS_Store

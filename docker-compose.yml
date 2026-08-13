@@ -13,17 +13,10 @@ services:
   # ==========================================
   # BANCO DE DADOS POSTGRESQL
   # ==========================================
-  # Database-per-Service: banco exclusivo deste microsserviço
-  # 
-  # 🔐 SEGURANÇA:
-  # - POSTGRES_PASSWORD em .env (não hardcoded)
-  # - Porta mapeada apenas para desenvolvimento (remova em prod)
-  # - Healthcheck garante que o app só sobe quando o DB está pronto
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: payment
-      # ⚠️ Em produção, use: POSTGRES_PASSWORD=${ POSTGRES_PASSWORD}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payment_dev_password}
       POSTGRES_DB: payment_service
     ports:
@@ -32,10 +25,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U payment -d payment_service"]
-      interval: 3s
-      timeout: 3s
+      interval: 5s
+      timeout: 5s
       retries: 10
-    # Isolamento de rede - apenas o payment-service conecta
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - payment-network
 
@@ -45,68 +39,38 @@ services:
   payment:
     build: .
     environment:
-      # Porta do serviço
       PORT: 3001
-      
-      # Conexão com o banco
-      # 🔐 IMPORTANTE: use o NOME DO SERVIÇO "db", não "localhost"!
-      # Dentro da rede Docker, localhost aponta para o próprio container
       DATABASE_URL: postgres://payment:${POSTGRES_PASSWORD:-payment_dev_password}@db:5432/payment_service
-      
-      # 🔐 SEGURANÇA CRÍTICA - Chaves sensíveis em .env
-      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_in_env_refresh}
       GATEWAY_WEBHOOK_SECRET: ${GATEWAY_WEBHOOK_SECRET:-}
-      
-      # Configurações de negócio
       COMMISSION_RATE: "0.12"
       SERVICE_FEE_CENTS: "150"
       PAYMENT_TIMEOUT_MS: "300000"
-      
-      # 🔐 Segurança adicional
       NODE_ENV: production
-      
     ports:
       - "3001:3001"
     depends_on:
       db:
         condition: service_healthy
-    
-    # ==========================================
-    # STARTUP SEGURO
-    # ==========================================
-    # Executa migrações antes de subir
-    # Se migrações falharem, o container não sobe
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
     command: sh -c "npm run migrate && npm start"
-    
-    # Reinício automático em falhas
-    restart: unless-stopped
-    
+    restart: on-failure
     networks:
       - payment-network
 
-  # ==========================================
-  # OPCIONAL: NGINX como proxy inverso
-  # ==========================================
-  # Em produção real, coloque um NGINX frente ao app
-  # - TLS termination
-  # - Rate limiting
-  # - Compression
-  # 
-  # exemplo:
-  # nginx:
-  #   image: nginx:alpine
-  #   ports: ["443:443"]
-  #   volumes: 
-  #     - ./nginx.conf:/etc/nginx/nginx.conf
-  #     - ./ssl:/etc/nginx/ssl
-  #   depends_on: [payment]
-  #   networks: [payment-network]
+  # Observação de segurança: para fail-closed em produção, rode:
+  # docker compose up --abort-on-container-exit
+  # Isso encerra todos os serviços quando qualquer um sai por falha.
 
-# ==========================================
+  # ==========================================
   # NOTIFICATION SERVICE
   # ==========================================
-  # Não possui banco próprio (usa memória/JSON, conforme enunciado).
-  # Database-per-Service NÃO se aplica pois não há persistência.
   notification:
     build: ./services/notification-service
     environment:
@@ -114,7 +78,16 @@ services:
       NODE_ENV: production
     ports:
       - "3004:3004"
-    restart: unless-stopped
+    depends_on:
+      payment:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3004/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: on-failure
     networks:
       - payment-network
 
